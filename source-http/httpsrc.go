@@ -88,7 +88,72 @@ func (s HTTPSRC) Check(srcCfgPath string, logTracker airbyte.LogTracker) error {
 
 // Discover returns the schema of the data you want to sync
 func (s HTTPSRC) Discover(srcConfigPath string, logTracker airbyte.LogTracker) (*airbyte.Catalog, error) {
-	return nil, nil
+	return &airbyte.Catalog{
+		Streams: []airbyte.Stream{
+			{
+				Name: "PhoneNumber",
+				JSONSchema: airbyte.Properties{
+					Properties: map[airbyte.PropertyName]airbyte.PropertySpec{
+						"id": {
+							PropertyType: airbyte.PropertyType{
+								Type:        []airbyte.PropType{airbyte.Integer, airbyte.Null},
+								AirbyteType: airbyte.BigInteger,
+							},
+							Description: "",
+						},
+						"uid": {
+							PropertyType: airbyte.PropertyType{
+								Type: []airbyte.PropType{airbyte.String, airbyte.Null},
+							},
+							Description: "",
+						},
+						"cell_phone": {
+							PropertyType: airbyte.PropertyType{
+								Type: []airbyte.PropType{airbyte.String, airbyte.Null},
+							},
+							Description: "",
+						},
+					},
+				},
+				SupportedSyncModes: []airbyte.SyncMode{
+					airbyte.SyncModeFullRefresh,
+				},
+				SourceDefinedCursor: false,
+				Namespace:           "raw",
+			},
+			{
+				Name: "Code",
+				JSONSchema: airbyte.Properties{
+					Properties: map[airbyte.PropertyName]airbyte.PropertySpec{
+						"id": {
+							PropertyType: airbyte.PropertyType{
+								Type:        []airbyte.PropType{airbyte.Integer, airbyte.Null},
+								AirbyteType: airbyte.BigInteger,
+							},
+							Description: "",
+						},
+						"uid": {
+							PropertyType: airbyte.PropertyType{
+								Type: []airbyte.PropType{airbyte.String, airbyte.Null},
+							},
+							Description: "",
+						},
+						"npi": {
+							PropertyType: airbyte.PropertyType{
+								Type: []airbyte.PropType{airbyte.String, airbyte.Null},
+							},
+							Description: "",
+						},
+					},
+				},
+				SupportedSyncModes: []airbyte.SyncMode{
+					airbyte.SyncModeFullRefresh,
+				},
+				SourceDefinedCursor: false,
+				Namespace:           "raw",
+			},
+		},
+	}, nil
 }
 
 // Read will read the actual data from your source and use tracker.Record(), tracker.State() and tracker.Log() to sync data with airbyte/destinations
