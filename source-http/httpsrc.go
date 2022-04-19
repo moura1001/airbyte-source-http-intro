@@ -14,7 +14,36 @@ func NewHTTPSRC(baseURL string) airbyte.Source {
 
 // Spec returns the input "form" spec needed for your source
 func (s HTTPSRC) Spec(logTracker airbyte.LogTracker) (*airbyte.ConnectorSpecification, error) {
-	return nil, nil
+	return &airbyte.ConnectorSpecification{
+		DocumentationURL:      "https://random-data-api.com/",
+		ChangeLogURL:          "https://random-data-api.com/",
+		SupportsIncremental:   false,
+		SupportsNormalization: true,
+		SupportsDBT:           true,
+		SupportedDestinationSyncModes: []airbyte.DestinationSyncMode{
+			airbyte.DestinationSyncModeAppend,
+			airbyte.DestinationSyncModeOverwrite,
+		},
+		ConnectionSpecification: airbyte.ConnectionSpecification{
+			Title:       "Random Data API",
+			Description: "Random Data Source API",
+			Type:        "object",
+			Required:    []airbyte.PropertyName{"numElements"},
+			Properties: airbyte.Properties{
+				Properties: map[airbyte.PropertyName]airbyte.PropertySpec{
+					"numElements": {
+						Description: "number of elements to pull per instance",
+						Examples:    []string{"1", "7", "16"},
+						PropertyType: airbyte.PropertyType{
+							Type: []airbyte.PropType{
+								airbyte.Integer,
+							},
+						},
+					},
+				},
+			},
+		},
+	}, nil
 }
 
 // Check verifies the source - usually verify creds/connection etc.
