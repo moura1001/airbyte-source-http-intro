@@ -1,6 +1,11 @@
 package sourcehttp
 
-import "github.com/bitstrapped/airbyte"
+import (
+	"errors"
+	"net/http"
+
+	"github.com/bitstrapped/airbyte"
+)
 
 type HTTPSRC struct {
 	baseURL string
@@ -14,6 +19,8 @@ func NewHTTPSRC(baseURL string) airbyte.Source {
 
 // Spec returns the input "form" spec needed for your source
 func (s HTTPSRC) Spec(logTracker airbyte.LogTracker) (*airbyte.ConnectorSpecification, error) {
+	logTracker.Log(airbyte.LogLevelInfo, "inside spec")
+
 	return &airbyte.ConnectorSpecification{
 		DocumentationURL:      "https://random-data-api.com/",
 		ChangeLogURL:          "https://random-data-api.com/",
@@ -46,8 +53,38 @@ func (s HTTPSRC) Spec(logTracker airbyte.LogTracker) (*airbyte.ConnectorSpecific
 	}, nil
 }
 
+type InputConfig struct {
+	NumElements int16 `json:"numElements"`
+}
+
 // Check verifies the source - usually verify creds/connection etc.
-func (s HTTPSRC) Check(srcCfgPath string, logTracker airbyte.LogTracker) error { return nil }
+func (s HTTPSRC) Check(srcCfgPath string, logTracker airbyte.LogTracker) error {
+	logTracker.Log(airbyte.LogLevelInfo, "inside check")
+
+	res, err := http.Get(s.baseURL)
+	if err != nil {
+		return err
+	}
+
+	if res.StatusCode != http.StatusOK {
+		return errors.New("api internal error")
+	}
+
+	var ic InputConfig
+	err = airbyte.UnmarshalFromPath(srcCfgPath, &ic)
+	if err != nil {
+		return err
+	}
+
+	if ic.NumElements <= 0 {
+		return errors.New("should be a positive value greater than 0")
+	}
+	if ic.NumElements > 100 {
+		return errors.New("can't have more then 100 elements")
+	}
+
+	return nil
+}
 
 // Discover returns the schema of the data you want to sync
 func (s HTTPSRC) Discover(srcConfigPath string, logTracker airbyte.LogTracker) (*airbyte.Catalog, error) {
