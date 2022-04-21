@@ -86,6 +86,18 @@ func (s HTTPSRC) Check(srcCfgPath string, logTracker airbyte.LogTracker) error {
 	return nil
 }
 
+type PhoneNumber struct {
+	ID        int64  `json:"id"`
+	UID       string `json:"uid"`
+	CellPhone string `json:"cell_phone"`
+}
+
+type Code struct {
+	ID  int64  `json:"id"`
+	UID string `json:"uid"`
+	NPI string `json:"npi"`
+}
+
 // Discover returns the schema of the data you want to sync
 func (s HTTPSRC) Discover(srcConfigPath string, logTracker airbyte.LogTracker) (*airbyte.Catalog, error) {
 	return &airbyte.Catalog{
@@ -156,10 +168,45 @@ func (s HTTPSRC) Discover(srcConfigPath string, logTracker airbyte.LogTracker) (
 	}, nil
 }
 
+type State struct {
+	LastSyncTime int64 `json:"lastSyncTime"`
+}
+
 // Read will read the actual data from your source and use tracker.Record(), tracker.State() and tracker.Log() to sync data with airbyte/destinations
 // MessageTracker is thread-safe and so it is completely find to spin off goroutines to sync your data (just don't forget your waitgroups :))
 // returning an error from this will cancel the sync and returning a nil from this will successfully end the sync
 func (s HTTPSRC) Read(sourceCfgPath string, prevStatePath string, configuredCat *airbyte.ConfiguredCatalog,
 	tracker airbyte.MessageTracker) error {
+
+	tracker.Log(airbyte.LogLevelInfo, "inside read")
+
+	var ic InputConfig
+	err := airbyte.UnmarshalFromPath(sourceCfgPath, &ic)
+	if err != nil {
+		return err
+	}
+
+	var st State
+	err = airbyte.UnmarshalFromPath(prevStatePath, &st)
+	if err != nil {
+		return err
+	}
+
+	for _, stream := range configuredCat.Streams {
+		if stream.SyncMode == airbyte.SyncModeFullRefresh {
+			errPN := FullRefreshPhoneNumber(stream, s.baseURL, ic.NumElements, tracker)
+
+			errC := FullRefreshCode(stream, s.baseURL, ic.NumElements, tracker)
+
+			if errPN != nil {
+				return errPN
+			}
+
+			if errC != nil {
+				return errC
+			}
+		}
+	}
+
 	return nil
 }
